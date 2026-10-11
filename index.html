@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#2b1a2e" />
+  <meta name="description" content="SUPER DATE — LEVEL 20/10 💗 Một cuộc hẹn nhỏ, một nhiệm vụ đặc biệt." />
+  <title>SUPER DATE — LEVEL 20/10 💗</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💗</text></svg>" />
+
+  <!-- Font pixel: "Press Start 2P" cho chữ tiếng Anh/tiêu đề, "VT323" hỗ trợ đầy đủ tiếng Việt -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div id="app">
+
+  <!-- =====================================================================
+       LỚP GAME: HUD + CANVAS + NÚT CẢM ỨNG
+       ===================================================================== -->
+  <section id="game-layer" aria-label="Màn chơi">
+    <header id="hud" class="hud hidden">
+      <div class="hud-stats">
+        <div class="hud-item">
+          <span class="hud-label">COINS</span>
+          <span class="hud-value"><i class="ico-coin" aria-hidden="true"></i>×<span id="hud-coins">00</span></span>
+        </div>
+        <div class="hud-item">
+          <span class="hud-label">HEARTS</span>
+          <span class="hud-value"><i class="ico-heart" aria-hidden="true"></i>×<span id="hud-hearts">0</span></span>
+        </div>
+        <div class="hud-item">
+          <span class="hud-label">MISSION</span>
+          <span class="hud-value" id="hud-mission">1/5</span>
+        </div>
+        <div class="hud-item hud-world">
+          <span class="hud-label">WORLD</span>
+          <span class="hud-value"><span id="hud-world">1</span><span id="hud-world-name" class="hud-world-name"></span></span>
+        </div>
+      </div>
+      <div class="hud-buttons">
+        <button id="btn-list" class="hud-btn hidden" type="button" aria-label="Danh sách địa điểm đã chọn">
+          📋<span id="hud-selected" class="hud-badge">0</span>
+        </button>
+        <button id="btn-sound-hud" class="hud-btn" type="button" aria-label="Bật/tắt âm thanh">🔊</button>
+      </div>
+    </header>
+
+    <div id="stage">
+      <canvas id="game" aria-label="Thế giới game SUPER DATE"></canvas>
+
+      <div id="world-banner" class="world-banner hidden" aria-live="polite">
+        <span id="world-banner-code">WORLD 1</span>
+        <strong id="world-banner-name">THE INVITATION</strong>
+      </div>
+
+      <div id="interact-prompt" class="interact-prompt hidden">
+        <span id="interact-name"></span>
+        <button id="btn-interact" class="px-btn px-btn-small px-btn-gold" type="button">XEM ĐỊA ĐIỂM</button>
+      </div>
+
+      <p id="key-hint" class="key-hint hidden">← → / A D: di chuyển · SPACE: nhảy húc hộp quà '?' & nhặt tim</p>
+    </div>
+
+    <div id="touch-controls" class="touch-controls hidden">
+      <div class="tc-group">
+        <button id="tc-left" class="tc-btn" type="button" aria-label="Sang trái">◀</button>
+        <button id="tc-right" class="tc-btn" type="button" aria-label="Sang phải">▶</button>
+      </div>
+      <div class="tc-group">
+        <button id="tc-action" class="tc-btn tc-action" type="button" aria-label="Tương tác">XEM</button>
+        <button id="tc-jump" class="tc-btn tc-jump" type="button" aria-label="Nhảy">JUMP</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- =====================================================================
+       MÀN HÌNH START
+       ===================================================================== -->
+  <section id="screen-start" class="overlay start-screen">
+    <div class="start-inner">
+      <div class="title-sprites" aria-hidden="true">
+        <img id="title-princess" class="pixelated" alt="" />
+        <span class="title-heart">💗</span>
+        <img id="title-boy" class="pixelated" alt="" />
+      </div>
+      <h1 class="title-logo">
+        <span class="t1">SUPER DATE</span>
+        <span class="t2">WORLD 20/10</span>
+      </h1>
+      <p class="tagline">Một cuộc hẹn nhỏ, một nhiệm vụ đặc biệt.</p>
+      <p class="press-start blink">PRESS START TO PLAY</p>
+      <div class="start-buttons">
+        <button id="btn-start" class="px-btn px-btn-red px-btn-big font-arcade" type="button">START GAME</button>
+        <button id="btn-continue" class="px-btn px-btn-gold hidden" type="button">TIẾP TỤC HÀNH TRÌNH</button>
+        <button id="btn-sound-start" class="px-btn px-btn-blue font-arcade" type="button">SOUND: ON</button>
+      </div>
+      <p class="start-foot">© 20/10 · Made with 💗 · Pixel art nguyên bản</p>
+    </div>
+  </section>
+
+  <!-- =====================================================================
+       HỘP THOẠI RETRO
+       ===================================================================== -->
+  <div id="dialog" class="dialog hidden" role="dialog" aria-live="polite" aria-label="Hộp thoại">
+    <div id="dialog-box" class="dialog-box px-frame">
+      <canvas id="dialog-avatar" class="dialog-avatar pixelated" width="16" height="16"></canvas>
+      <div class="dialog-body">
+        <div id="dialog-speaker" class="dialog-speaker">ANH</div>
+        <p id="dialog-text" class="dialog-text"></p>
+        <div id="dialog-actions" class="dialog-actions"></div>
+        <span id="dialog-next" class="dialog-next hidden" aria-hidden="true">▼</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       CARD ĐỊA ĐIỂM (tự sinh nội dung từ LOCATIONS)
+       ===================================================================== -->
+  <div id="loc-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="loc-name">
+    <div class="modal-card px-frame loc-card">
+      <button class="modal-close" type="button" data-close="loc" aria-label="Đóng">✕</button>
+      <div id="loc-media" class="loc-media"></div>
+      <div class="loc-info">
+        <div id="loc-cat" class="loc-cat"></div>
+        <h2 id="loc-name" class="loc-name"></h2>
+        <p id="loc-desc" class="loc-desc"></p>
+        <dl id="loc-meta" class="loc-meta"></dl>
+        <div id="loc-status" class="loc-status"></div>
+        <div id="loc-actions" class="loc-actions"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       DANH SÁCH ĐỊA ĐIỂM / HÀNH TRÌNH ĐÃ CHỌN
+       ===================================================================== -->
+  <div id="list-panel" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="list-title">
+    <div class="modal-card px-frame list-card">
+      <button class="modal-close" type="button" data-close="list" aria-label="Đóng">✕</button>
+      <h2 id="list-title" class="panel-title">HÀNH TRÌNH CỦA EM</h2>
+      <p class="panel-sub">★ = điểm hẹn chính · ♥ = điểm phụ trong lịch trình</p>
+      <div id="list-selected" class="list-selected"></div>
+      <h3 class="panel-h3">TẤT CẢ ĐỊA ĐIỂM TRÊN BẢN ĐỒ</h3>
+      <div id="list-all" class="list-all"></div>
+      <div class="panel-footer">
+        <button id="btn-list-close" class="px-btn" type="button">◀ QUAY LẠI BẢN ĐỒ</button>
+        <button id="btn-list-ticket" class="px-btn px-btn-gold hidden" type="button">🎟 VỀ VÉ HẸN HÒ</button>
+        <button id="btn-list-next" class="px-btn px-btn-red" type="button">LÊN LỊCH TRÌNH ▶</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       WORLD 2 — BUILD OUR ITINERARY (Mở từ Rương cuối Màn 2)
+       ===================================================================== -->
+  <section id="screen-itinerary" class="overlay page hidden" aria-labelledby="it-title">
+    <div class="page-inner px-frame">
+      <div class="page-head">
+        <span class="world-tag font-arcade">WORLD 2</span>
+        <h2 id="it-title" class="page-title font-arcade">BUILD OUR ITINERARY</h2>
+        <p class="page-sub">Lên lịch trình cho buổi hẹn 20/10. Em có thể thoải mái sửa giờ, đổi thứ tự hoạt động hoặc thêm ghi chú.</p>
+      </div>
+
+      <div class="field-group">
+        <h3 class="group-title">AI LÊN KẾ HOẠCH?</h3>
+        <div id="mode-options" class="mode-options"></div>
+        <p id="mode-desc" class="hint"></p>
+      </div>
+
+      <div class="field-group">
+        <h3 class="group-title">ĐỊA ĐIỂM ĐÃ CHỌN</h3>
+        <div id="it-selected" class="chip-row"></div>
+      </div>
+
+      <div class="field-group">
+        <h3 class="group-title">LỊCH TRÌNH MẪU</h3>
+        <div id="template-options" class="template-options"></div>
+        <p class="hint">Chọn một mẫu để điền nhanh, sau đó sửa lại tuỳ ý.</p>
+      </div>
+
+      <div class="field-group">
+        <h3 class="group-title">THỜI GIAN &amp; ĐÓN</h3>
+        <div class="grid-2">
+          <label class="field"><span>Ngày hẹn</span><input type="date" id="it-date" /></label>
+          <label class="field"><span>Giờ đón</span><input type="time" id="it-pickup-time" /></label>
+          <label class="field span-2"><span>Địa điểm đón</span><input type="text" id="it-pickup-place" maxlength="160" placeholder="VD: Trước cổng nhà em" /></label>
+          <label class="field"><span>Giờ bắt đầu</span><input type="time" id="it-start" /></label>
+          <label class="field"><span>Giờ ăn tối</span><input type="time" id="it-dinner" /></label>
+          <label class="field"><span>Giờ kết thúc</span><input type="time" id="it-end" /></label>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <h3 class="group-title">CÁC HOẠT ĐỘNG TIẾP THEO</h3>
+        <p class="hint">Kéo biểu tượng ⠿ hoặc dùng ▲ ▼ để đổi thứ tự.</p>
+        <ol id="activity-list" class="activity-list"></ol>
+        <div class="row-buttons">
+          <button id="btn-add-activity" class="px-btn px-btn-small" type="button">+ THÊM HOẠT ĐỘNG</button>
+          <button id="btn-gen-activity" class="px-btn px-btn-small px-btn-blue" type="button">⟳ TẠO TỪ ĐỊA ĐIỂM ĐÃ CHỌN</button>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label class="field"><span>Ghi chú lịch trình</span><textarea id="it-notes" rows="3" maxlength="1000" placeholder="VD: Nhớ mang áo khoác, tối có thể se lạnh"></textarea></label>
+      </div>
+
+      <div class="page-nav">
+        <button id="btn-it-back" class="px-btn" type="button">◀ QUAY LẠI MÀN 2</button>
+        <button id="btn-it-ticket" class="px-btn px-btn-gold hidden" type="button">✓ LƯU &amp; VỀ VÉ</button>
+        <button id="btn-it-next" class="px-btn px-btn-red" type="button">DUYỆT LỊCH TRÌNH &amp; ĐẾN GẶP ANH ▶</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Form profile dự phòng ẩn nếu có gọi trực tiếp -->
+  <section id="screen-profile" class="hidden" aria-hidden="true"></section>
+  <form id="profile-form" class="hidden" novalidate></form>
+  <button id="btn-pf-back" class="hidden" type="button"></button>
+  <button id="btn-pf-next" class="hidden" type="button"></button>
+  <button id="btn-pf-ticket" class="hidden" type="button"></button>
+  <div id="pf-status-options" class="hidden"></div>
+
+  <!-- =====================================================================
+       WORLD 3 — VÉ HẸN HÒ ĐIỆN TỬ & GỬI PHẢN HỒI (HỘI NGỘ HOÀNG HÔN)
+       ===================================================================== -->
+  <section id="screen-ticket" class="overlay page ticket-page hidden" aria-labelledby="tk-title">
+    <div class="ticket-wrap">
+      <h2 id="tk-title" class="ticket-title font-arcade">SUPER DATE 20/10 — BOARDING PASS</h2>
+
+      <!-- THÔNG TIN CỦA CÔNG CHÚA (cập nhật trực tiếp lên vé bên dưới) -->
+      <div class="px-frame ticket-panel">
+        <h3 class="group-title">THÔNG TIN CỦA CÔNG CHÚA 👑</h3>
+        <p class="hint">Em nhập tên hoặc biệt danh nhé. Mọi thông tin sẽ hiển thị trực tiếp lên tấm vé bên dưới!</p>
+        <div class="grid-2">
+          <label class="field span-2">
+            <span>Tên hoặc biệt danh <b class="req">*</b></span>
+            <input type="text" id="pf-name" maxlength="80" autocomplete="nickname" required placeholder="Công chúa…" />
+            <small class="field-error" data-for="pf-name"></small>
+          </label>
+          <label class="field">
+            <span>Email (tuỳ chọn)</span>
+            <input type="email" id="pf-email" maxlength="120" autocomplete="email" inputmode="email" placeholder="em@gmail.com" />
+            <small class="field-error" data-for="pf-email"></small>
+          </label>
+          <label class="field">
+            <span>Số điện thoại (tuỳ chọn)</span>
+            <input type="tel" id="pf-phone" maxlength="20" autocomplete="tel" inputmode="tel" placeholder="09xx xxx xxx" />
+            <small class="field-error" data-for="pf-phone"></small>
+          </label>
+          <label class="field span-2">
+            <span>Món ăn em yêu thích</span>
+            <input type="text" id="pf-food" maxlength="160" placeholder="VD: Lẩu, bánh flan, trà sữa…" />
+          </label>
+          <label class="field span-2">
+            <span>Sở thích &amp; lưu ý</span>
+            <input type="text" id="pf-pref" maxlength="300" placeholder="VD: Thích chụp ảnh, ăn cay ít…" />
+          </label>
+          <label class="field span-2">
+            <span>Lời nhắn gửi riêng cho anh</span>
+            <textarea id="pf-message" rows="2" maxlength="600" placeholder="Viết vài dòng ngọt ngào gửi anh nhé…"></textarea>
+          </label>
+        </div>
+      </div>
+
+      <!-- TẤM VÉ HẸN HÒ RETRO CHÍNH THỨC -->
+      <div id="ticket" class="ticket"></div>
+
+      <!-- BẢNG ĐIỀU KHIỂN & GỬI CÂU TRẢ LỜI -->
+      <div class="px-frame ticket-panel">
+        <h3 class="group-title">CÂU TRẢ LỜI CỦA EM</h3>
+        <div class="status-options" id="tk-status-options"></div>
+
+        <div class="ticket-actions">
+          <button id="btn-confirm" class="px-btn px-btn-red font-arcade" type="button">CONFIRM DATE</button>
+          <button id="btn-edit" class="px-btn font-arcade" type="button">CHỈNH SỬA LỊCH TRÌNH</button>
+          <button id="btn-send" class="px-btn px-btn-gold font-arcade" type="button">GỬI CÂU TRẢ LỜI CHO ANH 💌</button>
+        </div>
+
+        <div id="edit-menu" class="edit-menu hidden">
+          <p class="hint">Em muốn sửa phần nào?</p>
+          <button class="px-btn px-btn-small" type="button" data-edit="itinerary">🗓 LỊCH TRÌNH</button>
+        </div>
+
+        <div id="send-status" class="send-status hidden" role="status" aria-live="polite"></div>
+      </div>
+    </div>
+  </section>
+
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+</div>
+
+<!-- EmailJS SDK (chỉ dùng Public Key — KHÔNG bao giờ đặt Private Key / mật khẩu Gmail ở frontend) -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
