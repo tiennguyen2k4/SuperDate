@@ -166,9 +166,9 @@
       </div>
 
       <div class="field-group">
-        <h3 class="group-title">AI LÊN KẾ HOẠCH?</h3>
-        <div id="mode-options" class="mode-options"></div>
-        <p id="mode-desc" class="hint"></p>
+        <h3 id="mode-title" class="group-title">AI LÊN KẾ HOẠCH?</h3>
+        <div id="mode-options" class="mode-options" role="group" aria-labelledby="mode-title" aria-describedby="mode-desc"></div>
+        <p id="mode-desc" class="hint" aria-live="polite"></p>
       </div>
 
       <div class="field-group">
@@ -179,7 +179,7 @@
       <div class="field-group">
         <h3 class="group-title">LỊCH TRÌNH MẪU</h3>
         <div id="template-options" class="template-options"></div>
-        <p class="hint">Chọn một mẫu để điền nhanh, sau đó sửa lại tuỳ ý.</p>
+        <p class="hint">Áp dụng mẫu sẽ thay giờ và các hoạt động. Ngày hẹn, điểm đón và ghi chú riêng được giữ lại; em có thể sửa tiếp tuỳ ý.</p>
       </div>
 
       <div class="field-group">
@@ -196,11 +196,11 @@
 
       <div class="field-group">
         <h3 class="group-title">CÁC HOẠT ĐỘNG TIẾP THEO</h3>
-        <p class="hint">Kéo biểu tượng ⠿ hoặc dùng ▲ ▼ để đổi thứ tự.</p>
+        <p class="hint">Kéo biểu tượng ⠿ bằng chuột hoặc chạm giữ rồi kéo. Em cũng có thể dùng nút ▲ ▼ hoặc phím ↑ ↓ khi chọn ⠿ để đổi thứ tự.</p>
         <ol id="activity-list" class="activity-list"></ol>
         <div class="row-buttons">
           <button id="btn-add-activity" class="px-btn px-btn-small" type="button">+ THÊM HOẠT ĐỘNG</button>
-          <button id="btn-gen-activity" class="px-btn px-btn-small px-btn-blue" type="button">⟳ TẠO TỪ ĐỊA ĐIỂM ĐÃ CHỌN</button>
+          <button id="btn-gen-activity" class="px-btn px-btn-small px-btn-blue" type="button">⟳ DÙNG MẪU ANH CHUẨN BỊ</button>
         </div>
       </div>
 

@@ -73,7 +73,9 @@ const SECRET_DESTINATION = {
 const DEFAULT_ITINERARY = {
   date: "",                     // "YYYY-MM-DD". Để trống = tự lấy ngày 20/10 gần nhất
   pickupTime: "19:00",
+  startTime: "19:30",
   pickupPlace: "Trước cổng nhà em",
+  planningMode: "sender",
   dinnerTime: "19:30",
   endTime: "22:00",
   activities: [
@@ -84,6 +86,41 @@ const DEFAULT_ITINERARY = {
   ],
   notes: "Nhớ mang theo áo khoác mỏng nhé, tối trời có thể se lạnh."
 };
+
+const PLANNING_MODES = [
+  { id: "sender", label: "Anh chuẩn bị", description: "Anh chuẩn bị kế hoạch, em cứ xem và chỉnh lại theo ý thích nhé." },
+  { id: "together", label: "Cùng lên kế hoạch", description: "Hai đứa cùng chọn hoạt động và giờ giấc cho buổi hẹn." },
+  { id: "guest", label: "Em chọn kế hoạch", description: "Em chọn lịch trình em thích, anh sẽ chuẩn bị theo gợi ý của em." }
+];
+
+const ITINERARY_TEMPLATES = [
+  { id: "prepared", label: "Anh chuẩn bị", itinerary: DEFAULT_ITINERARY },
+  {
+    id: "coffee", label: "Cà phê & ăn tối",
+    itinerary: {
+      pickupTime: "17:30", startTime: "18:00", dinnerTime: "19:00", endTime: "21:00",
+      activities: [
+        { time: "17:30", title: "Anh qua đón em", note: "" },
+        { time: "18:00", title: "Cà phê & trò chuyện", note: "Chọn một góc ngồi thật thoải mái" },
+        { time: "19:00", title: "Ăn tối tại điểm hẹn bí mật", note: "" },
+        { time: "20:00", title: "Đi dạo & chụp ảnh cùng nhau", note: "" },
+        { time: "21:00", title: "Đưa em về nhà", note: "" }
+      ]
+    }
+  },
+  {
+    id: "relaxed", label: "Buổi tối nhẹ nhàng",
+    itinerary: {
+      pickupTime: "19:00", startTime: "19:30", dinnerTime: "19:30", endTime: "21:30",
+      activities: [
+        { time: "19:00", title: "Anh qua đón em", note: "" },
+        { time: "19:30", title: "Ăn tối tại điểm hẹn bí mật", note: "Thong thả thưởng thức món em thích" },
+        { time: "20:30", title: "Đi dạo & trò chuyện", note: "" },
+        { time: "21:30", title: "Đưa em về nhà", note: "" }
+      ]
+    }
+  }
+];
 
 /* ==========================================================================
    1.4 CẤU HÌNH EMAILJS ĐỂ NHẬN PHẢN HỒI VỀ GMAIL
@@ -1853,16 +1890,53 @@ function ensureItinerary() {
   const it = state.itinerary;
   if (!it.date) it.date = defaultDateISO();
   if (!it.pickupTime) it.pickupTime = DEFAULT_ITINERARY.pickupTime;
+  if (typeof it.startTime !== "string") it.startTime = it.pickupTime;
+  if (!PLANNING_MODES.some((mode) => mode.id === it.planningMode)) it.planningMode = "sender";
   if (!it.pickupPlace) it.pickupPlace = DEFAULT_ITINERARY.pickupPlace;
   if (!it.dinnerTime) it.dinnerTime = DEFAULT_ITINERARY.dinnerTime;
   if (!it.endTime) it.endTime = DEFAULT_ITINERARY.endTime;
-  if (!it.activities || !it.activities.length) {
+  if (!Array.isArray(it.activities)) {
     it.activities = JSON.parse(JSON.stringify(DEFAULT_ITINERARY.activities));
   }
 }
 
+function renderPlanningModes() {
+  els.modeOptions.innerHTML = PLANNING_MODES.map((mode) => `
+    <button type="button" class="mode-btn" data-mode="${mode.id}" aria-pressed="false">${esc(mode.label)}</button>
+  `).join("");
+  updatePlanningMode();
+}
+
+function updatePlanningMode() {
+  const selected = PLANNING_MODES.find((mode) => mode.id === state.itinerary.planningMode) || PLANNING_MODES[0];
+  $$("[data-mode]", els.modeOptions).forEach((button) => {
+    const active = button.dataset.mode === selected.id;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", String(active));
+  });
+  els.modeDesc.textContent = selected.description;
+}
+
+function applyItineraryTemplate(id) {
+  const template = ITINERARY_TEMPLATES.find((item) => item.id === id);
+  if (!template) return;
+  const it = state.itinerary, source = template.itinerary;
+  ["pickupTime", "startTime", "dinnerTime", "endTime"].forEach((key) => { it[key] = source[key]; });
+  it.activities = source.activities.map((activity) => ({ ...activity, id: uid() }));
+  renderItinerary();
+  markEdited();
+  Sound.play("select");
+  toast(`Đã áp dụng mẫu: ${template.label}`);
+  const button = $$("[data-template]", els.templateOptions).find((item) => item.dataset.template === id);
+  if (button) button.focus({ preventScroll: true });
+}
+
 function renderItinerary() {
   const it = state.itinerary;
+  renderPlanningModes();
+  els.templateOptions.innerHTML = ITINERARY_TEMPLATES.map((template) => `
+    <button type="button" class="px-btn px-btn-small" data-template="${template.id}">${esc(template.label)}</button>
+  `).join("");
 
   // Hiển thị thông báo địa điểm cố định
   els.itSelected.innerHTML = `
@@ -1872,7 +1946,7 @@ function renderItinerary() {
   els.itDate.value = it.date || "";
   els.itPickupTime.value = it.pickupTime || "";
   els.itPickupPlace.value = it.pickupPlace || "";
-  els.itStart.value = it.pickupTime || "";
+  els.itStart.value = it.startTime || "";
   els.itDinner.value = it.dinnerTime || "";
   els.itEnd.value = it.endTime || "";
   els.itNotes.value = it.notes || "";
@@ -1889,7 +1963,7 @@ function renderActivities() {
   }
   els.activityList.innerHTML = acts.map((a, i) => `
     <li class="act-item" data-id="${esc(a.id)}">
-      <span class="drag-handle" title="Kéo để đổi thứ tự">⠿</span>
+      <button type="button" class="drag-handle" title="Kéo hoặc dùng phím ↑ ↓ để đổi thứ tự" aria-label="Di chuyển hoạt động ${i + 1}">⠿</button>
       <span class="act-index">${i + 1}</span>
       <div class="act-fields">
         <input type="time" class="act-time" data-field="time" value="${esc(a.time)}" aria-label="Giờ" />
@@ -1904,14 +1978,130 @@ function renderActivities() {
     </li>`).join("");
 }
 
+function moveActivity(id, offset, focusSelector) {
+  const acts = state.itinerary.activities;
+  const from = acts.findIndex((activity) => activity.id === id);
+  const to = from + offset;
+  if (from < 0 || to < 0 || to >= acts.length) return;
+  const [activity] = acts.splice(from, 1);
+  acts.splice(to, 0, activity);
+  renderActivities();
+  markEdited();
+  Sound.play("blip");
+  const row = $$(".act-item", els.activityList).find((item) => item.dataset.id === id);
+  const control = $(focusSelector, row);
+  (control.disabled ? $(".drag-handle", row) : control).focus({ preventScroll: true });
+}
+
+function bindActivityDrag() {
+  const list = els.activityList;
+  let drag = null;
+  let scrollFrame = null;
+
+  const placeRow = () => {
+    const next = $$(".act-item", list).find((row) => {
+      if (row === drag.row) return false;
+      const rect = row.getBoundingClientRect();
+      return drag.y < rect.top + rect.height / 2;
+    });
+    if (drag.row.nextElementSibling !== (next || null)) list.insertBefore(drag.row, next || null);
+  };
+
+  const autoScroll = () => {
+    if (!drag || !drag.active) return;
+    const page = els.screenItinerary;
+    const rect = page.getBoundingClientRect();
+    const delta = drag.y < rect.top + 48 ? -12 : drag.y > rect.bottom - 48 ? 12 : 0;
+    const previous = page.scrollTop;
+    page.scrollTop += delta;
+    if (page.scrollTop !== previous) placeRow();
+    scrollFrame = requestAnimationFrame(autoScroll);
+  };
+
+  const finish = (commit) => {
+    if (!drag) return;
+    const current = drag;
+    drag = null;
+    cancelAnimationFrame(scrollFrame);
+    if (list.hasPointerCapture(current.pointerId)) list.releasePointerCapture(current.pointerId);
+    list.classList.remove("is-dragging");
+    current.row.classList.remove("dragging");
+    if (!current.active) return;
+    if (commit) {
+      const oldOrder = state.itinerary.activities;
+      const byId = new Map(oldOrder.map((activity) => [activity.id, activity]));
+      const newOrder = $$(".act-item", list).map((row) => byId.get(row.dataset.id));
+      if (newOrder.some((activity, i) => activity !== oldOrder[i])) {
+        state.itinerary.activities = newOrder;
+        markEdited();
+        Sound.play("blip");
+        toast("Đã đổi thứ tự hoạt động");
+      }
+    }
+    renderActivities();
+    const row = $$(".act-item", list).find((item) => item.dataset.id === current.row.dataset.id);
+    if (row) $(".drag-handle", row).focus({ preventScroll: true });
+  };
+
+  list.addEventListener("pointerdown", (event) => {
+    const handle = event.target.closest(".drag-handle");
+    if (!handle || drag || !event.isPrimary || event.button !== 0) return;
+    event.preventDefault();
+    handle.focus({ preventScroll: true });
+    drag = { row: handle.closest(".act-item"), pointerId: event.pointerId, startY: event.clientY, y: event.clientY, active: false };
+    list.setPointerCapture(event.pointerId);
+  });
+  list.addEventListener("pointermove", (event) => {
+    if (!drag || event.pointerId !== drag.pointerId) return;
+    drag.y = event.clientY;
+    if (!drag.active) {
+      if (Math.abs(drag.y - drag.startY) < 5) return;
+      drag.active = true;
+      drag.row.classList.add("dragging");
+      list.classList.add("is-dragging");
+      scrollFrame = requestAnimationFrame(autoScroll);
+    }
+    placeRow();
+  });
+  list.addEventListener("pointerup", (event) => { if (drag && event.pointerId === drag.pointerId) finish(true); });
+  ["pointercancel", "lostpointercapture"].forEach((name) => {
+    list.addEventListener(name, (event) => { if (drag && event.pointerId === drag.pointerId) finish(false); });
+  });
+  list.addEventListener("keydown", (event) => {
+    if (drag || !event.target.matches(".drag-handle") || !["ArrowUp", "ArrowDown"].includes(event.key)) return;
+    event.preventDefault();
+    moveActivity(event.target.closest(".act-item").dataset.id, event.key === "ArrowUp" ? -1 : 1, ".drag-handle");
+  });
+  window.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && drag) { event.preventDefault(); finish(false); }
+  });
+  window.addEventListener("blur", () => finish(false));
+  document.addEventListener("visibilitychange", () => { if (document.hidden) finish(false); });
+}
+
 function bindItinerary() {
   const bindField = (el, key) => el.addEventListener("input", () => { state.itinerary[key] = el.value; markEdited(); });
   bindField(els.itDate, "date");
   bindField(els.itPickupTime, "pickupTime");
+  bindField(els.itStart, "startTime");
   bindField(els.itPickupPlace, "pickupPlace");
   bindField(els.itDinner, "dinnerTime");
   bindField(els.itEnd, "endTime");
   bindField(els.itNotes, "notes");
+
+  els.modeOptions.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-mode]");
+    if (!button) return;
+    state.itinerary.planningMode = button.dataset.mode;
+    updatePlanningMode();
+    markEdited();
+    Sound.play("select");
+  });
+  els.templateOptions.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-template]");
+    if (button) applyItineraryTemplate(button.dataset.template);
+  });
+  bindActivityDrag();
 
   els.activityList.addEventListener("input", (e) => {
     const field = e.target.dataset.field;
@@ -1930,8 +2120,10 @@ function bindItinerary() {
     const acts = state.itinerary.activities;
     const i = acts.findIndex((x) => x.id === li.dataset.id);
     if (i < 0) return;
-    if (b.dataset.act === "up" && i > 0) [acts[i - 1], acts[i]] = [acts[i], acts[i - 1]];
-    if (b.dataset.act === "down" && i < acts.length - 1) [acts[i + 1], acts[i]] = [acts[i], acts[i + 1]];
+    if (b.dataset.act === "up" || b.dataset.act === "down") {
+      moveActivity(li.dataset.id, b.dataset.act === "up" ? -1 : 1, `[data-act="${b.dataset.act}"]`);
+      return;
+    }
     if (b.dataset.act === "del") acts.splice(i, 1);
     Sound.play("blip");
     renderActivities(); markEdited();
@@ -1946,10 +2138,8 @@ function bindItinerary() {
   });
 
   els.btnGenActivity.addEventListener("click", () => {
-    state.itinerary.activities = JSON.parse(JSON.stringify(DEFAULT_ITINERARY.activities));
-    Sound.play("select");
-    toast("Đã khôi phục lịch trình anh gợi ý ban đầu");
-    renderActivities(); markEdited();
+    applyItineraryTemplate("prepared");
+    els.btnGenActivity.focus({ preventScroll: true });
   });
 
   els.btnItBack.addEventListener("click", () => {
@@ -2051,6 +2241,7 @@ function bindProfile() {
    ========================================================================== */
 function showTicket() {
   closeAllModals();
+  ensureItinerary();
   state.currentScreen = "ticket";
   game.world = 3;
   game.mode = "frozen";
@@ -2090,7 +2281,10 @@ function renderTicket() {
       <div class="tk-grid">
         <div class="span-2"><span class="tk-label">NGÀY HẸN</span><span class="tk-val">${esc(formatDateVN(it.date))}</span></div>
         <div><span class="tk-label">GIỜ ĐÓN</span><span class="tk-val">${esc(it.pickupTime || "--:--")}</span></div>
+        <div><span class="tk-label">GIỜ BẮT ĐẦU</span><span class="tk-val">${esc(it.startTime || "--:--")}</span></div>
         <div><span class="tk-label">ĂN TỐI</span><span class="tk-val">${esc(it.dinnerTime || "--:--")}</span></div>
+        <div><span class="tk-label">KẾT THÚC</span><span class="tk-val">${esc(it.endTime || "--:--")}</span></div>
+        <div class="span-2"><span class="tk-label">NGƯỜI LÊN KẾ HOẠCH</span><span class="tk-val">${esc((PLANNING_MODES.find((mode) => mode.id === it.planningMode) || PLANNING_MODES[0]).label)}</span></div>
         <div class="span-2"><span class="tk-label">ĐIỂM ĐÓN</span><span class="tk-val">${esc(it.pickupPlace || "—")}</span></div>
         <div class="span-2"><span class="tk-label">ĐIỂM HẸN BÍ MẬT</span><span class="tk-val" style="color:#d9487f">★ ${esc(SECRET_DESTINATION.name)}</span></div>
       </div>
@@ -2173,11 +2367,14 @@ function isEmailJsConfigured() {
 
 function buildEmailParams() {
   const g = state.guestProfile, it = state.itinerary;
+  const planningMode = (PLANNING_MODES.find((mode) => mode.id === it.planningMode) || PLANNING_MODES[0]).label;
   const actLines = (it.activities || []).map((a, i) => `${i + 1}. ${a.time || "--:--"}  ${a.title || ""}${a.note ? ` (${a.note})` : ""}`).join("\n");
   const schedule = [
     `Ngày hẹn: ${formatDateVN(it.date)}`,
+    `Người lên kế hoạch: ${planningMode}`,
     `Điểm hẹn bí mật: ${SECRET_DESTINATION.name} (${SECRET_DESTINATION.address})`,
     `Giờ đón: ${it.pickupTime || "--:--"} tại ${it.pickupPlace || "—"}`,
+    `Giờ bắt đầu: ${it.startTime || "--:--"}`,
     `Ăn tối: ${it.dinnerTime || "--:--"}`,
     `Kết thúc: ${it.endTime || "--:--"}`,
     "Hoạt động chi tiết:",
@@ -2191,11 +2388,13 @@ function buildEmailParams() {
     guest_phone: g.phone.trim() || "(không cung cấp)",
     reply_to: g.email.trim(),
     confirmation_status: STATUS_LABELS[state.confirmationStatus] || "CHƯA CHỌN",
+    planning_mode: planningMode,
     main_location: SECRET_DESTINATION.name,
     selected_locations: SECRET_DESTINATION.name + " (" + SECRET_DESTINATION.address + ")",
     activities: actLines,
     date: formatDateVN(it.date),
     pickup_time: it.pickupTime || "--:--",
+    start_time: it.startTime || "--:--",
     pickup_place: it.pickupPlace || "—",
     dinner_time: it.dinnerTime || "--:--",
     end_time: it.endTime || "--:--",
@@ -2296,7 +2495,12 @@ function resumeGame(saved) {
   state.collectedHearts = Number(saved.collectedHearts) || 0;
   state.openedGiftsCount = Number(saved.openedGiftsCount) || 0;
   state.collectedKeys = Array.isArray(saved.collectedKeys) ? saved.collectedKeys : [];
-  if (saved.itinerary) state.itinerary = Object.assign(state.itinerary, saved.itinerary);
+  if (saved.itinerary) {
+    state.itinerary = Object.assign(state.itinerary, saved.itinerary);
+    // Tiến trình cũ từng dùng giờ đón làm giờ bắt đầu.
+    if (typeof saved.itinerary.startTime !== "string") state.itinerary.startTime = state.itinerary.pickupTime;
+  }
+  ensureItinerary();
   Sound.ensure(); Sound.play("start");
   const scr = saved.currentScreen;
   if (scr === "world1") startWorld(1);
@@ -2363,6 +2567,9 @@ function bindUI() {
   bindItinerary();
   bindProfile();
   bindTicket();
+  window.addEventListener("pagehide", () => {
+    if (state.currentScreen !== "start") saveProgress();
+  });
 }
 
 function loop() {

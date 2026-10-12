@@ -1003,6 +1003,13 @@ html, body {
   color: var(--c-gold-light);
 }
 
+.mode-btn:focus-visible,
+.template-options .px-btn:focus-visible,
+.drag-handle:focus-visible {
+  outline: 2px solid var(--c-gold);
+  outline-offset: 3px;
+}
+
 .chip-row {
   display: flex;
   gap: 8px;
@@ -1088,6 +1095,7 @@ input:focus, select:focus, textarea:focus {
   flex-direction: column;
   gap: 8px;
   margin-top: 4px;
+  overflow-anchor: none;
 }
 
 .act-item {
@@ -1104,12 +1112,27 @@ input:focus, select:focus, textarea:focus {
   background: rgba(255, 212, 59, 0.2);
 }
 
+.activity-list.is-dragging {
+  user-select: none;
+}
+
 .drag-handle {
+  flex-shrink: 0;
+  width: 32px;
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
   font-size: 26px;
   color: var(--color-dim);
   cursor: grab;
   padding: 0 4px;
   user-select: none;
+  touch-action: none;
+}
+
+.act-item.dragging .drag-handle {
+  cursor: grabbing;
 }
 
 .act-index {
@@ -1121,13 +1144,14 @@ input:focus, select:focus, textarea:focus {
 
 .act-fields {
   flex: 1;
+  min-width: 0;
   display: grid;
-  grid-template-columns: 90px 1fr 140px;
+  grid-template-columns: 90px minmax(0, 1fr);
   gap: 6px;
 }
 
 .act-fields .act-note {
-  grid-column: span 3;
+  grid-column: 1 / -1;
   font-size: 20px;
 }
 
@@ -1139,12 +1163,15 @@ input:focus, select:focus, textarea:focus {
 
 .row-buttons {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
   margin-top: 6px;
 }
 
 .page-nav {
   display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
   justify-content: space-between;
   margin-top: 10px;
   border-top: 2px dashed rgba(255, 255, 255, 0.2);
@@ -1536,7 +1563,11 @@ input:focus, select:focus, textarea:focus {
   }
 
   .act-fields {
-    grid-template-columns: 80px 1fr;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .page-inner {
+    padding: 16px 10px;
   }
 
   .act-fields .act-loc {
@@ -1544,7 +1575,7 @@ input:focus, select:focus, textarea:focus {
   }
 
   .act-fields .act-note {
-    grid-column: span 2;
+    grid-column: 1 / -1;
   }
 
   .ticket-actions {
