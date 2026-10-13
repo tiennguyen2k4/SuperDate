@@ -52,6 +52,16 @@
     <div id="stage">
       <canvas id="game" aria-label="Thế giới game SUPER DATE"></canvas>
 
+      <div id="dragon-challenge" class="dragon-challenge hidden" aria-label="Thử thách rồng giữ cửa">
+        <div class="dragon-heading">
+          <strong>RỒNG YÊN NỘI</strong>
+          <span id="dragon-progress" class="dragon-progress" aria-label="Đã vượt 0 trên 3 lượt">
+            <span aria-hidden="true">♡</span><span aria-hidden="true">♡</span><span aria-hidden="true">♡</span>
+          </span>
+        </div>
+        <p id="dragon-instruction" role="status" aria-live="polite" aria-atomic="true"></p>
+      </div>
+
       <div id="world-banner" class="world-banner hidden" aria-live="polite">
         <span id="world-banner-code">WORLD 1</span>
         <strong id="world-banner-name">THE INVITATION</strong>

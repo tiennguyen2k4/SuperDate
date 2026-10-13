@@ -298,6 +298,36 @@ html, body {
   border: 1px solid #000;
 }
 
+/* Thử thách rồng ở màn hoàng hôn */
+.dragon-challenge {
+  position: absolute;
+  top: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(420px, calc(100% - 24px));
+  padding: 10px 14px;
+  border: 2px solid #ffb8d2;
+  background: rgba(43, 24, 54, 0.94);
+  box-shadow: 0 4px 0 rgba(20, 11, 26, 0.5);
+  color: #fff7eb;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.dragon-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.dragon-heading strong { font-size: 20px; letter-spacing: 1px; }
+.dragon-progress { display: flex; gap: 8px; font-size: 26px; line-height: 1; color: #bda4ca; }
+.dragon-progress .cleared { color: #ff8fa3; text-shadow: 0 0 8px #d9487f; }
+.dragon-challenge p { margin-top: 4px; font-size: 20px; line-height: 1.2; }
+.dragon-challenge[data-phase="warning"] { border-color: #ffd43b; }
+.dragon-challenge[data-phase="warning"] p { color: #fff3bf; }
+
 /* World banner */
 .world-banner {
   position: absolute;
@@ -589,10 +619,12 @@ html, body {
 }
 
 .dialog-speaker {
-  font-family: var(--font-arcade);
-  font-size: 12px;
+  /* Tên người nói có dấu cần cùng một font, tránh trộn nét với font dự phòng. */
+  font-family: var(--font-pixel);
+  font-size: 22px;
+  line-height: 1.25;
   color: var(--c-gold);
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
 }
 
 .dialog-text {

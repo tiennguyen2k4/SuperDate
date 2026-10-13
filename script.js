@@ -186,6 +186,14 @@ const PHYS = {
   gravity: 0.3, maxFall: 6, accel: 0.22, airAccel: 0.16, friction: 0.74,
   maxSpeed: 1.9, jumpVel: -6.3, coyote: 7, buffer: 8
 };
+// Sáu quả lửa sát đất, giãn cách đủ cho một lần nhảy trọn vẹn (~42 khung hình).
+const DRAGON_WAVES = [
+  { count: 1, speed: 1.5 },
+  { count: 2, speed: 1.7 },
+  { count: 3, speed: 1.9 }
+];
+const DRAGON_WARNING_FRAMES = 48;
+const DRAGON_CELEBRATION = { duration: 360, launchAt: 60, heartAt: 120, burstAt: 200, flyAt: 270 };
 const SOLID = new Set(["G", "D", "B", "Q", "U", "S", "[", "]", "{", "}"]);
 const ONE_WAY = new Set(["C", "="]);
 
@@ -222,6 +230,7 @@ function createInitialState() {
     confirmationStatus: null,        // null | accepted | needs_changes | thinking
     isHugging: false,                // Đang trong cutscene ôm nhau ở Màn 4
     hugCutsceneDone: false,
+    dragonWavesCleared: 0,           // Giữ các lượt đã vượt khi thử lại / tiếp tục phiên chơi
     editingFromTicket: false,
     sendState: "idle",               // idle | sending | sent | error
     soundOn: true
@@ -334,6 +343,8 @@ const Sound = {
       case "hug": [392, 523, 659, 784, 1047].forEach((f, i) => this.tone(f, 0.22, "triangle", 0.07, i * 0.08)); break;
       case "start": [392, 523, 659, 784].forEach((f, i) => this.tone(f, 0.1, "square", 0.045, i * 0.08)); break;
       case "firework": this.noise(0.45, 0.05); this.tone(900, 0.3, "triangle", 0.025, 0, 200); break;
+      case "dragon_breath": this.tone(110, 0.65, "triangle", 0.035, 0, 220); break;
+      case "dragon_fire": this.noise(0.22, 0.04); this.tone(170, 0.2, "sawtooth", 0.025, 0, 65); break;
       case "error": this.tone(220, 0.25, "sawtooth", 0.04, 0, 110); break;
     }
   }
@@ -498,6 +509,8 @@ function buildSprites() {
     walk2: { r: makeSprite(TURTLE_WALK2), l: flipCanvas(makeSprite(TURTLE_WALK2)) },
     shell: makeSprite(TURTLE_SHELL)
   };
+  SPR.dragon = [buildDragonSprite(false), buildDragonSprite(true)];
+  SPR.dragonSky = [buildDragonSprite(false, true), buildDragonSprite(true, true)];
   SPR.tiles = buildTiles();
   SPR.coins = buildCoins();
   SPR.cloud = buildCloud();
@@ -509,6 +522,50 @@ function buildSprites() {
   SPR.castle = buildCastle();
   SPR.chestClosed = buildChest(false);
   SPR.chestOpen = buildChest(true);
+}
+
+/* Rồng tím quay sang trái, cùng nét pixel với các nhân vật hiện có. */
+function buildDragonSprite(wingsUp, lookingUp = false) {
+  const c = makeCanvas(56, 48), x = c.getContext("2d");
+  const outline = "#30213f", dark = "#654080", purple = "#925bac", light = "#c08ad0";
+  // Đuôi, gai và cánh dạng bậc thang.
+  px(x, 39, 34, 12, 8, outline); px(x, 48, 27, 6, 12, outline);
+  px(x, 41, 35, 9, 5, purple); px(x, 50, 28, 3, 9, purple);
+  px(x, 51, 24, 3, 4, "#ffcf82");
+  const wy = wingsUp ? 0 : 7;
+  [[34, wy, 4, 26], [38, wy + 4, 5, 24], [43, wy + 8, 5, 22], [48, wy + 13, 4, 16]].forEach(([a, b, w, h]) => px(x, a, b, w, h, outline));
+  px(x, 36, wy + 6, 3, 19, light); px(x, 39, wy + 10, 5, 17, purple);
+  px(x, 44, wy + 14, 5, 14, "#d58abd"); px(x, 39, wy + 19, 2, 9, dark);
+  // Thân, bụng và chân.
+  px(x, 23, 22, 20, 23, outline); px(x, 21, 29, 24, 13, outline);
+  px(x, 24, 24, 17, 19, purple); px(x, 22, 30, 20, 10, purple);
+  px(x, 23, 30, 9, 13, "#ffe1ad"); px(x, 24, 34, 8, 1, "#d8ab83"); px(x, 24, 39, 8, 1, "#d8ab83");
+  px(x, 19, 43, 12, 5, outline); px(x, 35, 42, 11, 6, outline);
+  px(x, 20, 44, 9, 3, purple); px(x, 36, 43, 8, 4, purple);
+  px(x, 19, 46, 3, 2, "#ffe1ad"); px(x, 35, 46, 3, 2, "#ffe1ad");
+  // Ngẩng mõm lên trời khi phun pháo hoa mừng chiến thắng.
+  if (lookingUp) {
+    px(x, 12, 18, 21, 19, outline); px(x, 14, 19, 17, 17, purple);
+    px(x, 12, 7, 13, 20, outline); px(x, 14, 9, 9, 16, purple);
+    px(x, 12, 7, 13, 3, outline); px(x, 14, 8, 9, 2, "#ffcf82");
+    px(x, 15, 12, 2, 2, outline); px(x, 21, 12, 2, 2, outline);
+    px(x, 22, 23, 7, 6, "#fff7eb"); px(x, 23, 23, 3, 4, outline);
+    px(x, 23, 23, 1, 1, "#ffffff"); px(x, 25, 30, 4, 3, "#ed96bb");
+    px(x, 8, 16, 4, 12, outline); px(x, 9, 17, 2, 8, "#ffcf82");
+    px(x, 31, 18, 4, 11, outline); px(x, 32, 19, 2, 7, "#ffcf82");
+    return c;
+  }
+  // Sừng, đầu, mõm và nụ cười.
+  px(x, 16, 10, 4, 11, outline); px(x, 27, 12, 4, 10, outline);
+  px(x, 17, 11, 2, 8, "#ffcf82"); px(x, 28, 13, 2, 7, "#ffcf82");
+  px(x, 11, 18, 22, 19, outline); px(x, 13, 19, 18, 17, purple);
+  px(x, 12, 20, 13, 3, light); px(x, 2, 29, 24, 12, outline);
+  px(x, 3, 30, 22, 9, purple); px(x, 3, 30, 12, 2, light);
+  px(x, 16, 24, 7, 6, "#fff7eb"); px(x, 16, 25, 3, 5, outline);
+  px(x, 16, 25, 1, 1, "#ffffff"); px(x, 5, 32, 2, 2, outline);
+  px(x, 3, 36, 13, 2, outline); px(x, 12, 36, 2, 2, "#ffe1ad");
+  px(x, 23, 30, 4, 3, "#ed96bb");
+  return c;
 }
 
 function spriteUrl(canvas, scale = 4) {
@@ -840,7 +897,7 @@ function buildWorld2() {
 
 /* --------------------------------------------------------------------------
    WORLD 3 — THE SUNSET DATE (GỘP MÀN 4 & 5: HỘI NGỘ HOÀNG HÔN & ÔM NHAU)
-   Cảnh hoàng hôn tím hồng lãng mạn, chàng trai đứng chờ, công chúa chạy tới ôm!
+   Rồng giữ cổng hoa: né lửa qua ba lượt trước khi chạy tới ôm chàng trai.
    Sau cutscene ôm nhau, chuyển thẳng sang Vé Hẹn Hò & Phản Hồi.
    -------------------------------------------------------------------------- */
 function buildWorld3() {
@@ -857,6 +914,12 @@ function buildWorld3() {
 
   // Cổng hoa 20/10 đón chào
   L.decor.push({ type: "gate", c: 26 });
+
+  L.dragon = {
+    x: 27 * TILE, arenaLeft: 18 * TILE, arenaRight: 25 * TILE, checkpointX: 20 * TILE,
+    phase: state.dragonWavesCleared >= DRAGON_WAVES.length ? "cleared" : "asleep",
+    wave: state.dragonWavesCleared, timer: 0, shotsFired: 0, fireballs: [], recoil: 0, tick: 0
+  };
 
   // CHÀNG TRAI ĐỨNG CHỜ ĐÓN CÔNG CHÚA Ở CỘT 36!
   L.npc = { c: 36 };
@@ -1014,7 +1077,185 @@ function burstHearts(x, y, n = 8) {
   }
 }
 
+/* Rồng giữ cửa: mọi đồng hồ dùng bước vật lý, dừng khi mở hộp thoại. */
+function setDragonInstruction(d, message) {
+  els.dragonPanel.classList.remove("hidden");
+  els.dragonPanel.dataset.phase = d.phase;
+  els.dragonInstruction.textContent = message;
+  els.dragonProgress.setAttribute("aria-label", `Đã vượt ${d.wave} trên ${DRAGON_WAVES.length} lượt`);
+  Array.from(els.dragonProgress.children).forEach((heart, i) => {
+    heart.textContent = i < d.wave ? "♥" : "♡";
+    heart.classList.toggle("cleared", i < d.wave);
+  });
+}
+
+function resetDragonRound(d, retry = false) {
+  d.fireballs = []; d.shotsFired = 0; d.recoil = 0;
+  d.phase = retry ? "retry" : "rest"; d.timer = 90;
+  setDragonInstruction(d, retry
+    ? `Úi, thử lại lượt ${d.wave + 1} nhé! Tim và xu vẫn giữ nguyên.`
+    : `Lượt ${d.wave + 1}/3 · ${DRAGON_WAVES[d.wave].count} quả lửa. Chờ lửa tới rồi nhảy!`);
+}
+
+function dragonWarning(d) {
+  d.phase = "warning"; d.timer = DRAGON_WARNING_FRAMES;
+  setDragonInstruction(d, `Lượt ${d.wave + 1}/3 · Rồng đang hít vào… chuẩn bị nhảy!`);
+  Sound.play("dragon_breath");
+}
+
+function dragonCelebrationPoint(d) {
+  return { x: (d.arenaLeft + d.x + 56) / 2, y: GROUND_Y - 108 };
+}
+
+function dragonCelebrationFlame(d, elapsed) {
+  const timing = DRAGON_CELEBRATION, target = dragonCelebrationPoint(d);
+  const t = clamp((elapsed - timing.launchAt) / (timing.heartAt - timing.launchAt), 0, 1);
+  return {
+    x: d.x + 18 + (target.x - d.x - 18) * t * t,
+    y: GROUND_Y - 40 + (target.y - GROUND_Y + 40) * (1 - (1 - t) ** 2)
+  };
+}
+
+function burstDragonHeart(d) {
+  const target = dragonCelebrationPoint(d);
+  // Tách từng ô pixel của trái tim lớn thành những tia pháo hoa.
+  HEART_ROWS.forEach((row, yy) => {
+    [...row].forEach((color, xx) => {
+      if (!PAL[color]) return;
+      const dx = (xx + 0.5 - 4) * 8, dy = (yy + 0.5 - 3.5) * 8;
+      const life = 75 + Math.random() * 20;
+      game.particles.push({
+        x: target.x + dx, y: target.y + dy,
+        vx: dx * 0.045, vy: dy * 0.045 - 0.25, g: 0.012,
+        life, max: life, size: 3, color: color === "L" ? "#fff3bf" : "#ff8fa3", type: "spark"
+      });
+    });
+  });
+  spawnParticles(target.x, target.y, 48, ["#ffd43b", "#ff6fa5", "#fff7eb"], { speed: 2.2, g: 0.012, life: 65, type: "spark" });
+  burstHearts(target.x, target.y, 8);
+  Sound.play("firework");
+}
+
+function updateDragonCelebration(d) {
+  const timing = DRAGON_CELEBRATION, elapsed = timing.duration - d.timer;
+  const target = dragonCelebrationPoint(d);
+  if (elapsed === timing.launchAt) {
+    els.dragonPanel.classList.add("hidden");
+    Sound.play("dragon_fire");
+  }
+  if (elapsed >= timing.launchAt && elapsed < timing.heartAt) {
+    const flame = dragonCelebrationFlame(d, elapsed);
+    spawnParticles(flame.x, flame.y, 2, ["#ff8c42", "#ffd43b", "#fff3bf"], { speed: 0.45, g: 0.01, life: 18, size: 1 });
+  }
+  if (elapsed === timing.heartAt) Sound.play("heart");
+  if (elapsed === timing.burstAt) burstDragonHeart(d);
+  // Hai chùm phụ bung lần lượt ở hai bên trái tim, trong khung hình điện thoại.
+  if (elapsed === timing.burstAt + 28 || elapsed === timing.burstAt + 52) {
+    const side = elapsed === timing.burstAt + 28 ? -1 : 1;
+    spawnParticles(target.x + side * 56, target.y + 8, 36, ["#ff8fa3", "#ffd43b", "#ffffff"], { speed: 1.6, g: 0.014, life: 48, type: "spark" });
+    Sound.play("firework");
+  }
+  if (elapsed >= timing.flyAt && elapsed % 15 === 0) {
+    burstHearts(d.x + 8, GROUND_Y - 30 - (elapsed - timing.flyAt) * 1.8, 2);
+  }
+  if (--d.timer <= 0) {
+    d.phase = "cleared";
+    els.dragonPanel.classList.add("hidden");
+    toast("Rồng nhường đường rồi! Chạy tới bên anh thôi 💗", 3200);
+  }
+}
+
+function updateDragon(L, p) {
+  const d = L.dragon;
+  if (!d || d.phase === "cleared") return;
+  if (d.phase === "asleep") {
+    if (p.x < d.checkpointX || !p.onGround) return;
+    d.phase = "arriving"; d.timer = 60;
+    p.x = d.checkpointX; p.vx = p.vy = 0;
+    game.mode = "frozen"; resetInput();
+    els.banner.classList.add("hidden");
+    setDragonInstruction(d, "Một chú rồng đang đáp xuống cổng hoa…");
+    return;
+  }
+  d.tick++;
+  if (d.recoil > 0) d.recoil--;
+  // Hai hàng hoa sáng đánh dấu sân thử thách; không thể chạy vòng qua rồng.
+  const boundedX = clamp(p.x, d.arenaLeft + 4, d.arenaRight - p.w);
+  if (p.x !== boundedX) { p.x = boundedX; p.vx = 0; }
+
+  if (d.phase === "arriving") {
+    if (--d.timer <= 0) {
+      d.phase = "briefing";
+      spawnParticles(d.x + 25, GROUND_Y - 2, 16, ["#ffe1ad", "#d58abd"], { speed: 1.3 });
+      showDialog({
+        speaker: "RỒNG YÊN NỘI", avatar: "dragon",
+        lines: [
+          "Muốn gặp Teni Yên Nội của You? Vượt qua ta đã! hahaha",
+          "Ta sẽ phun lửa sát đất. Chờ quả lửa tới gần rồi bấm SPACE hoặc JUMP để nhảy qua. Né đủ ba lượt là cổng hoa mở!",
+          "Chạm lửa thì thử lại lượt đang chơi thôi. Tim, xu và các lượt đã vượt vẫn được giữ nhé!"
+        ],
+        actions: [{ label: "EM SẴN SÀNG! ♥", primary: true, onClick: () => {
+          game.mode = "play"; resetInput(); resetDragonRound(d);
+        } }]
+      });
+    }
+    return;
+  }
+  if (d.phase === "briefing") return;
+  if (d.phase === "celebrate") {
+    updateDragonCelebration(d);
+    return;
+  }
+  if (d.phase === "rest" || d.phase === "retry" || d.phase === "gap") {
+    if (--d.timer <= 0) dragonWarning(d);
+  } else if (d.phase === "warning") {
+    if (--d.timer <= 0) {
+      const wave = DRAGON_WAVES[d.wave];
+      d.fireballs.push({ x: d.x + 2, y: GROUND_Y - 12, w: 12, h: 10, vx: -wave.speed });
+      d.shotsFired++; d.recoil = 16;
+      d.phase = d.shotsFired < wave.count ? "gap" : "flight";
+      d.timer = 60;
+      Sound.play("dragon_fire");
+      setDragonInstruction(d, `Lượt ${d.wave + 1}/3 · Lửa đang tới! Chờ gần rồi nhảy. (${d.shotsFired}/${wave.count})`);
+    }
+  }
+
+  for (const fire of d.fireballs) {
+    fire.x += fire.vx;
+    // Hitbox nhỏ hơn hình lửa để mép váy / đuôi lửa không gây trúng oan.
+    if (overlap(p, fire.x + 2, fire.y + 2, fire.w - 4, fire.h - 4)) {
+      spawnParticles(p.x + p.w / 2, p.y + 7, 14, ["#ffd43b", "#ff8fa3", "#fff7eb"]);
+      p.x = d.checkpointX; p.y = GROUND_Y - p.h;
+      p.vx = -1.2; p.vy = -1.8; p.onGround = false;
+      p.safeX = d.checkpointX; p.safeY = GROUND_Y - p.h;
+      p.invincible = 90; p.jumpBuf = 0; p.coyote = 0;
+      resetInput(); Sound.play("bump"); resetDragonRound(d, true);
+      return;
+    }
+  }
+  d.fireballs = d.fireballs.filter((fire) => fire.x + fire.w > d.arenaLeft);
+  if (d.phase === "flight" && d.fireballs.length === 0) {
+    d.wave++;
+    state.dragonWavesCleared = d.wave;
+    saveProgress();
+    burstHearts(p.x + p.w / 2, p.y - 10, 6);
+    Sound.play("heart");
+    if (d.wave === DRAGON_WAVES.length) {
+      d.phase = "celebrate"; d.timer = DRAGON_CELEBRATION.duration;
+      resetInput(); p.vx = 0;
+      setDragonInstruction(d, "Giỏi quá! Ta tặng em một trái tim. Vào gặp Teni Yên Nội thôi! ♥");
+      Sound.play("success");
+      Sound.play("dragon_breath");
+    } else {
+      resetDragonRound(d);
+    }
+  }
+}
+
 function update() {
+  const dragon = game.level && game.level.dragon;
+  // Giữ cả vệt sáng và pháo hoa đứng yên khi tạm dừng thử thách / rời tab.
+  if (dragon && dragon.phase !== "cleared" && (isOverlayOpen() || document.hidden)) return;
   game.t++;
   if (game.timers.length) {
     const due = [];
@@ -1052,6 +1293,8 @@ function update() {
     return;
   }
   if (!p) return;
+  // Màn rồng phải tạm dừng cả nhân vật lẫn lửa khi đọc thoại hoặc rời tab.
+  if (L.dragon && (isOverlayOpen() || document.hidden)) return;
 
   // Xử lý Cutscene Ôm Nhau ở Màn 3 (Hội ngộ hoàng hôn)
   if (game.mode === "cutscene_hug") {
@@ -1175,6 +1418,7 @@ function update() {
   }
 
   if (p.invincible > 0) p.invincible--;
+  updateDragon(L, p);
 
   if (game.mode === "play" || game.mode === "frozen") collectItems(p, L);
   if (game.mode === "play" && !isOverlayOpen()) checkTriggers(p, L);
@@ -1189,14 +1433,17 @@ function updateCamera(snap) {
   const maxX = Math.max(0, L.cols * TILE - view.w);
   cam.y = WORLD_H - view.h;
   if (!p) { cam.x = clamp(cam.x, 0, maxX); return; }
-  const target = clamp(p.x + p.w / 2 - view.w / 2 + p.facing * 18, 0, maxX);
+  const d = L.dragon;
+  const inDragonArena = d && d.phase !== "asleep" && d.phase !== "cleared";
+  const focusX = inDragonArena ? (d.arenaLeft + d.x + 56) / 2 : p.x + p.w / 2 + p.facing * 18;
+  const target = clamp(focusX - view.w / 2, 0, maxX);
   cam.x = snap ? target : cam.x + (target - cam.x) * 0.1;
 }
 
 /* Kiểm tra các sự kiện qua màn và kích hoạt cutscene */
 function checkTriggers(p, L) {
   // MÀN 3: Kiểm tra khoảng cách tới chàng trai để kích hoạt Cutscene Ôm Nhau
-  if (game.world === 3 && L.npc && !state.isHugging) {
+  if (game.world === 3 && L.npc && !state.isHugging && (!L.dragon || L.dragon.phase === "cleared")) {
     const npcX = L.npc.c * TILE + 8;
     if (Math.abs(p.x - npcX) < 38) {
       game.mode = "cutscene_hug";
@@ -1287,6 +1534,9 @@ function resize() {
   canvas.style.height = Math.floor(view.h * scale) + "px";
   ctx.imageSmoothingEnabled = false;
 
+  els.dragonPanel.style.top = `${els.hud.offsetHeight + 10}px`;
+  els.stage.style.background = game.world === 3 ? "#4a255b" : "#5fb8ff";
+
   // Bầu trời thay đổi theo màn: Màn 3 hoàng hôn lãng mạn
   skyGrad = ctx.createLinearGradient(0, 0, 0, view.h);
   if (game.world === 3) {
@@ -1363,6 +1613,8 @@ function render() {
     }
   }
 
+  if (L.dragon) drawDragon(L.dragon, cx, cy);
+
   // Xu & tim
   const coinFrame = SPR.coins[Math.floor(game.t / 8) % 4];
   for (const coin of L.coins) if (!coin.taken) ctx.drawImage(coinFrame, coin.x - cx, coin.y - cy);
@@ -1402,6 +1654,12 @@ function render() {
   // Hạt & pháo hoa
   for (const pt of game.particles) {
     const a = clamp(pt.life / (pt.max || 30), 0, 1);
+    if (pt.type === "spark") {
+      ctx.globalAlpha = a * 0.3;
+      px(ctx, Math.round(pt.x - pt.vx * 3 - cx), Math.round(pt.y - pt.vy * 3 - cy), 1, 1, pt.color);
+      ctx.globalAlpha = a * 0.55;
+      px(ctx, Math.round(pt.x - pt.vx * 1.5 - cx), Math.round(pt.y - pt.vy * 1.5 - cy), 2, 2, pt.color);
+    }
     ctx.globalAlpha = a;
     if (pt.type === "heart") ctx.drawImage(SPR.heart, Math.round(pt.x - cx), Math.round(pt.y - cy));
     else if (pt.type === "coin") ctx.drawImage(SPR.coins[Math.floor(game.t / 3) % 4], Math.round(pt.x - cx), Math.round(pt.y - cy));
@@ -1409,6 +1667,88 @@ function render() {
   }
   ctx.globalAlpha = 1;
   for (const rk of game.rockets) px(ctx, Math.round(rk.x - cx), Math.round(rk.y - cy), 2, 3, rk.color);
+  if (L.dragon && L.dragon.phase === "celebrate") drawDragonCelebration(L.dragon, cx, cy);
+}
+
+function drawDragon(d, cx, cy) {
+  if (d.phase === "asleep" || d.phase === "cleared") return;
+  const elapsed = d.phase === "celebrate" ? DRAGON_CELEBRATION.duration - d.timer : 0;
+  const departure = Math.max(0, elapsed - DRAGON_CELEBRATION.flyAt);
+  const lift = d.phase === "arriving" ? (d.timer / 60) * 100 : departure * 2.8;
+  const x = Math.round(d.x - cx + departure * 0.5);
+  const y = Math.round(GROUND_Y - 48 - cy - lift);
+  // Cánh đập lúc đáp xuống / bay đi, thở nhẹ lúc canh cổng.
+  const flap = Math.floor(d.tick / (lift > 0 ? 6 : 24)) % 2;
+  const lookingUp = d.phase === "celebrate" && elapsed < DRAGON_CELEBRATION.flyAt;
+  ctx.drawImage(lookingUp ? SPR.dragonSky[flap] : SPR.dragon[flap], x, y);
+  if (lookingUp && elapsed < DRAGON_CELEBRATION.heartAt) {
+    px(ctx, x + 14, y + 8, 9, 2, "#ff8c42");
+    px(ctx, x + 16, y + 7, 5, 2, "#fff3bf");
+  }
+  if (d.phase === "warning" || d.recoil > 0) {
+    const glow = d.phase === "warning" ? Math.floor((48 - d.timer) / 12) : 4;
+    px(ctx, x + 2, y + 35, 11, 4, "#e65a32");
+    px(ctx, x + 2, y + 36, 3 + glow * 2, 2, "#ffd43b");
+    if (d.phase === "warning") {
+      px(ctx, x + 7, y + 12, 2, 7, "#fff3bf");
+      px(ctx, x + 7, y + 21, 2, 2, "#fff3bf");
+    }
+  }
+  // Ba tim phía trên rồng, đồng bộ với bảng tiến độ.
+  for (let i = 0; i < DRAGON_WAVES.length; i++) {
+    ctx.globalAlpha = i < d.wave ? 1 : 0.3;
+    ctx.drawImage(SPR.heart, x + 10 + i * 11, y - 12);
+  }
+  ctx.globalAlpha = 1;
+  for (const fire of d.fireballs) {
+    const fx = Math.round(fire.x - cx), fy = Math.round(fire.y - cy);
+    const flicker = Math.floor(d.tick / 3) % 2;
+    px(ctx, fx + 7, fy + 3, 12 + flicker * 3, 4, "#ed693b");
+    px(ctx, fx + 3, fy, 7, 10, "#a72d3e");
+    px(ctx, fx, fy + 2, 13, 6, "#ff8c42");
+    px(ctx, fx + 2, fy + 2, 7, 6, "#ffd43b");
+    px(ctx, fx + 2, fy + 3, 4, 3, "#fff3bf");
+    px(ctx, fx + 16, fy + flicker * 6, 2, 2, "#ffd43b");
+  }
+  // Hàng hoa sáng ở hai biên vùng thử thách.
+  for (const edge of [d.arenaLeft, d.arenaRight]) {
+    const ex = Math.round(edge - cx);
+    ctx.globalAlpha = 0.3;
+    px(ctx, ex, GROUND_Y - 70 - cy, 2, 70, "#ffb8d2");
+    ctx.globalAlpha = 1;
+    ctx.drawImage(SPR.heart, ex - 3, GROUND_Y - 11 - cy);
+    px(ctx, ex, GROUND_Y - 4 - cy, 2, 4, "#fff3bf");
+  }
+}
+
+function drawDragonCelebration(d, cx, cy) {
+  const timing = DRAGON_CELEBRATION, elapsed = timing.duration - d.timer;
+  if (elapsed >= timing.launchAt && elapsed < timing.heartAt) {
+    const flame = dragonCelebrationFlame(d, elapsed);
+    const x = Math.round(flame.x - cx), y = Math.round(flame.y - cy);
+    px(ctx, x - 3, y - 4, 7, 12, "#ed693b");
+    px(ctx, x - 2, y - 5, 5, 9, "#ffd43b");
+    px(ctx, x - 1, y - 4, 3, 5, "#fff3bf");
+  }
+  if (elapsed >= timing.heartAt && elapsed < timing.burstAt) {
+    const target = dragonCelebrationPoint(d);
+    const age = elapsed - timing.heartAt;
+    const grow = Math.min(1, (age + 1) / 14);
+    const width = Math.round((64 + Math.sin(age * 0.18) * 3) * grow);
+    const height = Math.round(width * 7 / 8);
+    const x = Math.round(target.x - cx - width / 2), y = Math.round(target.y - cy - height / 2);
+    ctx.globalAlpha = 0.18;
+    ctx.drawImage(SPR.heart, x - 5, y - 4, width + 10, height + 8);
+    ctx.globalAlpha = 1;
+    ctx.drawImage(SPR.heart, x, y, width, height);
+    // Các tia sao vàng xoay quanh trái tim, không chớp sáng toàn màn hình.
+    for (let i = 0; i < 5; i++) {
+      const angle = i * Math.PI * 2 / 5 + age * 0.018;
+      const sx = Math.round(target.x - cx + Math.cos(angle) * (width / 2 + 8));
+      const sy = Math.round(target.y - cy + Math.sin(angle) * (height / 2 + 8));
+      px(ctx, sx - 2, sy, 5, 1, "#fff3bf"); px(ctx, sx, sy - 2, 1, 5, "#fff3bf");
+    }
+  }
 }
 
 function drawBackground(cx, cy) {
@@ -1543,6 +1883,12 @@ function updateControlsVisibility() {
   els.touch.classList.toggle("hidden", !(inGame && isTouch));
   els.keyHint.classList.toggle("hidden", !(inGame && !isTouch));
   els.hud.classList.toggle("hidden", !inGame);
+  const d = game.level && game.level.dragon;
+  const skyShow = d && d.phase === "celebrate" && d.timer <= DRAGON_CELEBRATION.duration - DRAGON_CELEBRATION.launchAt;
+  els.dragonPanel.classList.toggle("hidden", !(inGame && d && d.phase !== "asleep" && d.phase !== "cleared" && !skyShow));
+  els.keyHint.textContent = game.world === 3
+    ? "← → / A D: di chuyển · SPACE: nhảy qua lửa để mở cổng hoa"
+    : "← → / A D: di chuyển · SPACE: nhảy húc hộp quà '?' & nhặt tim";
   els.btnList.classList.add("hidden"); // Không cần nút danh sách chọn địa điểm vì địa điểm là bí mật cố định
   requestAnimationFrame(resize);
 }
@@ -1561,6 +1907,7 @@ function showDialog({ speaker = INVITE_CONFIG.senderName, avatar = "boy", lines,
   actx.imageSmoothingEnabled = false;
   if (avatar === "boy") actx.drawImage(SPR.boy.idle.r, 0, 0);
   else if (avatar === "princess") actx.drawImage(SPR.princess.idle.r, 0, 0);
+  else if (avatar === "dragon") actx.drawImage(SPR.dragon[0], 2, 14, 32, 28, 0, 0, 16, 16);
   else actx.drawImage(SPR.heart, 4, 4);
   els.dialog.classList.remove("hidden");
   typeLine();
@@ -1710,6 +2057,7 @@ function startNewGame() {
 
 function startWorld(n, opts = {}) {
   closeAllModals();
+  resetInput();
   showPage(null);
   state.currentScreen = "world" + n;
   game.world = n;
@@ -2471,6 +2819,7 @@ function saveProgress() {
       collectedCoins: state.collectedCoins,
       collectedHearts: state.collectedHearts,
       openedGiftsCount: state.openedGiftsCount,
+      dragonWavesCleared: state.dragonWavesCleared,
       collectedKeys: state.collectedKeys,
       itinerary: state.itinerary
     };
@@ -2494,6 +2843,7 @@ function resumeGame(saved) {
   state.collectedCoins = Number(saved.collectedCoins) || 0;
   state.collectedHearts = Number(saved.collectedHearts) || 0;
   state.openedGiftsCount = Number(saved.openedGiftsCount) || 0;
+  state.dragonWavesCleared = clamp(Math.floor(Number(saved.dragonWavesCleared) || 0), 0, DRAGON_WAVES.length);
   state.collectedKeys = Array.isArray(saved.collectedKeys) ? saved.collectedKeys : [];
   if (saved.itinerary) {
     state.itinerary = Object.assign(state.itinerary, saved.itinerary);
@@ -2519,6 +2869,7 @@ function cacheEls() {
   const id = (x) => document.getElementById(x);
   els = {
     stage: id("stage"), hud: id("hud"), touch: id("touch-controls"), keyHint: id("key-hint"),
+    dragonPanel: id("dragon-challenge"), dragonProgress: id("dragon-progress"), dragonInstruction: id("dragon-instruction"),
     hudCoins: id("hud-coins"), hudHearts: id("hud-hearts"), hudMission: id("hud-mission"), hudWorld: id("hud-world"),
     hudWorldName: id("hud-world-name"), hudSelected: id("hud-selected"), btnList: id("btn-list"), btnSoundHud: id("btn-sound-hud"),
     banner: id("world-banner"), bannerCode: id("world-banner-code"), bannerName: id("world-banner-name"),

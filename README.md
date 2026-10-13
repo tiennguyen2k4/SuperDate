@@ -26,6 +26,9 @@ Website thiệp mời hẹn hò ngày 20/10 tương tác theo phong cách game p
    - **Rương 2 (Cuối màn)**: Mở ra giao diện **Lịch trình chi tiết** (`DEFAULT_ITINERARY`) cho phép nàng tự do đổi giờ, sắp xếp lại hoạt động bằng ▲ ▼ hoặc ghi chú thêm.
 5. **World 3 — The Sunset Date (Hội ngộ hoàng hôn & Vé hẹn hò)**:
    - Khung cảnh ráng chiều hoàng hôn tím hồng lãng mạn, chàng trai đứng chờ ở đồi cỏ.
+   - **Rồng giữ cửa** đáp xuống trước cổng hoa: dùng **SPACE / JUMP** nhảy qua ba lượt lửa sát đất (1 → 2 → 3 quả). Rồng hít vào, miệng sáng lên trước mỗi lần phun; ba trái tim báo số lượt đã vượt.
+   - Chạm lửa chỉ thử lại lượt hiện tại tại điểm bắt đầu gần rồng; giữ nguyên xu, tim và các lượt đã vượt. Tiến độ được lưu theo phiên để có thể tiếp tục sau khi tải lại trang.
+   - Né đủ ba lượt, rồng ngẩng đầu phun một vệt lửa lên trời. Vệt lửa hóa thành trái tim lớn, đập nhẹ rồi nổ thành pháo hoa hồng vàng và hai chùm sáng hai bên. Cảnh mừng kéo dài khoảng 6 giây, sau đó rồng bay đi và mở đường tới chàng trai.
    - Khi công chúa tiến tới gần: kích hoạt **Cutscene ôm nhau** độc quyền (`SPR.hug`), trái tim bay ngập trời và nhạc chiến thắng vang lên.
    - Ngay sau đó xuất hiện **Vé Hẹn Hò Điện Tử (Boarding Pass)** tích hợp: Nàng điền Tên, món ăn yêu thích, lời nhắn (tự động cập nhật trực tiếp lên tấm vé) và bấm **GỬI CÂU TRẢ LỜI CHO ANH 💌** về Gmail qua EmailJS!
 6. **Bảo mật & Tôn trọng quyền riêng tư**:
