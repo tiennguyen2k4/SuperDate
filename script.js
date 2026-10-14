@@ -32,6 +32,8 @@
    ========================================================================== */
 'use strict';
 
+const APP_ASSET_BASE = new URL(".", document.currentScript.src);
+
 /* ==========================================================================
    1.1 NHỮNG ĐIỀU ANH THÍCH Ở EM (MÀN 1 — MỞ HỘP QUÀ BÍ MẬT '?')
    --------------------------------------------------------------------------
@@ -55,9 +57,9 @@ const SWEET_MESSAGES = [
    Ảnh thật sẽ hiển thị sắc nét tự nhiên, không bị vỡ hay pixel hoá.
    ========================================================================== */
 const SECRET_DESTINATION = {
-  name: "Nhà Hàng & Cafe Hoàng Hôn",
-  image: "assets/locations/cafe-01.jpg", // Đổi thành file ảnh của bạn trong assets/locations/ hoặc URL https://
-  address: "Tầng thượng ngắm trọn thành phố",
+  name: "Nhà Hàng Chả cá Kẻ chợ",
+  image: "assets/locations/chacakecho.png", // Đổi thành file ảnh của bạn trong assets/locations/ hoặc URL https://
+  address: "175 Đ. Nguyễn Tuân, Thanh Xuân, Hà Nội",
   description: "Không gian lung linh ánh nến, có view hoàng hôn tuyệt đẹp và giai điệu acoustic êm dịu.",
   whyThisPlace: "Vì anh nhớ em từng bảo em chưa được ăn món này bao giờ.",
   price: "Anh đã lo hết mọi thứ rồi nhé!",
@@ -96,15 +98,14 @@ const PLANNING_MODES = [
 const ITINERARY_TEMPLATES = [
   { id: "prepared", label: "Anh chuẩn bị", itinerary: DEFAULT_ITINERARY },
   {
-    id: "coffee", label: "Cà phê & ăn tối",
+    id: "coffee", label: "Ăn tối & đi dạo",
     itinerary: {
-      pickupTime: "17:30", startTime: "18:00", dinnerTime: "19:00", endTime: "21:00",
+      pickupTime: "19:00", startTime: "19:30", dinnerTime: "19:30", endTime: "22:00",
       activities: [
-        { time: "17:30", title: "Anh qua đón em", note: "" },
-        { time: "18:00", title: "Cà phê & trò chuyện", note: "Chọn một góc ngồi thật thoải mái" },
-        { time: "19:00", title: "Ăn tối tại điểm hẹn bí mật", note: "" },
-        { time: "20:00", title: "Đi dạo & chụp ảnh cùng nhau", note: "" },
-        { time: "21:00", title: "Đưa em về nhà", note: "" }
+        { time: "19:00", title: "Anh qua đón em", note: "" },
+        { time: "19:30", title: "Ăn tối tại điểm hẹn bí mật", note: "" },
+        { time: "21:30", title: "Đi dạo & ngắm cảnh đêm", note: "" },
+        { time: "22:00", title: "Đưa em về nhà", note: "" }
       ]
     }
   },
@@ -126,9 +127,9 @@ const ITINERARY_TEMPLATES = [
    1.4 CẤU HÌNH EMAILJS ĐỂ NHẬN PHẢN HỒI VỀ GMAIL
    Chỉ dùng PUBLIC KEY. KHÔNG đặt Private Key hay mật khẩu Gmail ở đây.
    ========================================================================== */
-const EMAILJS_PUBLIC_KEY = "YOUR_PUBLIC_KEY"; /*YOUR_PUBLIC_KEY*/
-const EMAILJS_SERVICE_ID = "YOUR_SERVICE_ID"; /*YOUR_SERVICE_ID*/
-const EMAILJS_TEMPLATE_ID = "YOUR_TEMPLATE_ID"; /*YOUR_TEMPLATE_ID*/
+const EMAILJS_PUBLIC_KEY = "E5gOR4nunYvBixVVf"; /*YOUR_PUBLIC_KEY*/
+const EMAILJS_SERVICE_ID = "service_w1dnssg"; /*YOUR_SERVICE_ID*/
+const EMAILJS_TEMPLATE_ID = "template_gp74jj7"; /*YOUR_TEMPLATE_ID*/
 
 /* ==========================================================================
    1.5 THÔNG TIN NGƯỜI MỜI & LỜI THOẠI
@@ -142,7 +143,7 @@ const DIALOGUES = {
   intro: [
     "Chào Karli xinh đẹp! Chúc em ngày 20/10 ngập tràn niềm vui 💗",
     "Hôm nay, anh đã chuẩn bị một thế giới phiêu lưu đặc biệt dành riêng cho em.",
-    "Trước khi xuất phát, anh dặn dò công chúa vài điều bí mật nè:",
+    "Trước khi xuất phát, anh dặn dò Karli vài điều bí mật nè:",
     "💗 Nhặt TRÁI TIM: Bắn pháo hoa rực rỡ và bay lên những lời thì thầm ngọt ngào anh dành cho em!",
     "🎁 Mở HỘP QUÀ '?': Hãy nhảy lên húc đầu vào các khối hộp '?' — mỗi hộp quà sẽ bật mí một điều anh cực kỳ yêu thích ở em đó!",
     "🪙 Ăn ĐỒNG XU: Thu thập để nạp đầy thanh năng lượng tình yêu trên góc màn hình.",
@@ -2188,11 +2189,11 @@ function openSecretDestinationModal() {
     img.onload = () => box.classList.remove("loading");
     img.onerror = () => {
       box.classList.remove("loading");
-      box.innerHTML = `<div class="loc-placeholder"><strong>${esc(loc.name)}</strong><small>Ảnh đang được cập nhật</small></div>`;
+      box.innerHTML = `<div class="loc-placeholder"><strong>${esc(loc.name)}</strong><small>Không tải được ảnh. Kiểm tra file và đường dẫn.</small></div>`;
     };
     box.classList.add("loading");
-    img.src = loc.image;
     box.appendChild(img);
+    img.src = new URL(loc.image, APP_ASSET_BASE).href;
   }
 
   els.locCat.innerHTML = `✨ BẬT MÍ ĐIỂM HẸN BÍ MẬT NGÀY 20/10 ✨`;
@@ -2209,7 +2210,7 @@ function openSecretDestinationModal() {
   els.locStatus.innerHTML = `<span class="badge badge-gold">★ ĐIỂM HẸN HOÀN HẢO DÀNH CHO EM</span>`;
 
   els.locActions.innerHTML = `
-    <button class="px-btn px-btn-red px-btn-big font-arcade" type="button" id="btn-dest-next">
+    <button class="px-btn px-btn-red px-btn-big" type="button" id="btn-dest-next">
       EM RẤT THÍCH! TIẾP TỤC HÀNH TRÌNH ▶
     </button>
   `;
@@ -2625,7 +2626,7 @@ function renderTicket() {
       <span class="ticket-sub font-arcade">LEVEL 20/10 · ADMIT 2</span>
     </div>
     <div class="ticket-body">
-      <div class="tk-player"><span class="tk-label">PLAYER</span><span class="tk-big">${esc(g.name || "Công chúa")}</span></div>
+      <div class="tk-player"><span class="tk-label">PLAYER</span><span class="tk-big">${esc(g.name || "Karli")}</span></div>
       <div class="tk-grid">
         <div class="span-2"><span class="tk-label">NGÀY HẸN</span><span class="tk-val">${esc(formatDateVN(it.date))}</span></div>
         <div><span class="tk-label">GIỜ ĐÓN</span><span class="tk-val">${esc(it.pickupTime || "--:--")}</span></div>

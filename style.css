@@ -771,10 +771,12 @@ html, body {
 
 .loc-cat {
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 6px;
-  font-family: var(--font-arcade);
-  font-size: 10px;
+  font-family: var(--font-pixel);
+  font-size: 20px;
+  line-height: 1.1;
   color: var(--c-gold);
 }
 
@@ -816,8 +818,9 @@ html, body {
 }
 
 .badge {
-  font-family: var(--font-arcade);
-  font-size: 9px;
+  font-family: var(--font-pixel);
+  font-size: 18px;
+  line-height: 1.1;
   padding: 4px 8px;
   border: 1px solid #000;
 }
@@ -1001,8 +1004,9 @@ html, body {
 }
 
 .group-title {
-  font-family: var(--font-arcade);
-  font-size: 11px;
+  font-family: var(--font-pixel);
+  font-size: 22px;
+  line-height: 1;
   color: var(--c-gold);
 }
 
@@ -1178,8 +1182,13 @@ input:focus, select:focus, textarea:focus {
   flex: 1;
   min-width: 0;
   display: grid;
-  grid-template-columns: 90px minmax(0, 1fr);
+  grid-template-columns: 120px minmax(0, 1fr);
   gap: 6px;
+}
+
+.act-time {
+  min-width: 120px;
+  padding-inline: 6px;
 }
 
 .act-fields .act-note {
@@ -1325,8 +1334,10 @@ input:focus, select:focus, textarea:focus {
 }
 
 .tk-label {
-  font-family: var(--font-arcade);
-  font-size: 9px;
+  display: block;
+  font-family: var(--font-pixel);
+  font-size: 18px;
+  line-height: 1.05;
   color: #8a4b2a;
 }
 
@@ -1338,13 +1349,15 @@ input:focus, select:focus, textarea:focus {
 
 .tk-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
 
 .tk-val {
+  display: block;
   font-size: 24px;
   font-weight: bold;
+  line-height: 1.1;
   color: #2a1b18;
 }
 
@@ -1393,8 +1406,9 @@ input:focus, select:focus, textarea:focus {
 }
 
 .tk-status {
-  font-family: var(--font-arcade);
-  font-size: 11px;
+  font-family: var(--font-pixel);
+  font-size: 20px;
+  line-height: 1.1;
   padding: 8px;
   text-align: center;
   border: 2px dashed #333;
@@ -1449,8 +1463,12 @@ input:focus, select:focus, textarea:focus {
 }
 
 .stub-coins {
-  font-family: var(--font-arcade);
-  font-size: 9px;
+  font-family: var(--font-pixel);
+  font-size: 18px;
+}
+
+.tk-grid .span-2 {
+  grid-column: 1 / -1;
 }
 
 /* Panel điều khiển gửi vé */
